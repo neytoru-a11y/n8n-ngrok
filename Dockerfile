@@ -1,28 +1,26 @@
-# Start from the official n8n Docker image (which is now Alpine-based)
-FROM n8nio/n8n:latest
+# Start from the official n8n DEBIAN image, which includes a full OS environment
+FROM n8nio/n8n:debian
 
-# The official n8n image sets the working directory to /data, which we will use.
-WORKDIR /data
-
-# Switch to the root user to install system packages and prepare the script
+# Switch to the root user to install new software
 USER root
 
-# Install dependencies using Alpine's package manager
-RUN apk update && apk add --no-cache curl jq unzip
+# Install curl and jq using Debian's package manager 'apt-get'
+RUN apt-get update && apt-get install -y curl jq gnupg && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Download and install the ngrok binary to a standard PATH location
-RUN curl -sL "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip" -o /tmp/ngrok.zip && \
-    unzip /tmp/ngrok.zip -d /usr/local/bin && \
-    rm /tmp/ngrok.zip
+# Add the ngrok repository and install ngrok
+RUN curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/ngrok.gpg && \
+    echo "deb https://ngrok-agent.s3.amazonaws.com buster main" > /etc/apt/sources.list.d/ngrok.list && \
+    apt-get update && \
+    apt-get install -y ngrok
 
-# Copy the start script into the current working directory (/data)
-COPY ./start.sh .
+# Copy the start script into a standard location
+COPY ./start.sh /usr/local/bin/start.sh
 
-# Make the start script executable while still the root user
-RUN chmod +x ./start.sh
+# Make the script executable
+RUN chmod +x /usr/local/bin/start.sh
 
-# Now, switch to the non-privileged 'node' user for security
+# Switch back to the non-privileged 'node' user for security
 USER node
 
-# DEBUG: Instead of running the script, just list the files in the directory.
-CMD ["ls", "-la"]
+# Set the command to run when the container starts
+CMD ["/usr/local/bin/start.sh"]
