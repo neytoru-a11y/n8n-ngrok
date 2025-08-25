@@ -1,27 +1,28 @@
 # Start from the official n8n Docker image (which is now Alpine-based)
 FROM n8nio/n8n:latest
 
-# Switch to the root user to install new software
+# The official n8n image sets the working directory to /data, which we will use.
+WORKDIR /data
+
+# Switch to the root user to install system packages
 USER root
 
-# Alpine's package manager is 'apk'.
-# Install curl and jq (for the start script) and unzip (to extract ngrok).
+# Install dependencies using Alpine's package manager
 RUN apk update && apk add --no-cache curl jq unzip
 
-# Since we are on Alpine, we download the ngrok binary directly
-# instead of using a package repository.
+# Download and install the ngrok binary to a standard PATH location
 RUN curl -sL "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip" -o /tmp/ngrok.zip && \
     unzip /tmp/ngrok.zip -d /usr/local/bin && \
     rm /tmp/ngrok.zip
 
-# Copy your start script into a standard location in the image
-COPY ./start.sh /usr/local/bin/start.sh
-
-# Make the start script executable
-RUN chmod +x /usr/local/bin/start.sh
-
-# Switch back to the non-privileged 'node' user for security
+# Switch back to the non-privileged 'node' user who owns the /data directory
 USER node
 
-# Set the command to run when the container starts
-CMD ["/usr/local/bin/start.sh"]
+# Copy the start script into the current working directory (/data)
+COPY ./start.sh .
+
+# Make the start script executable
+RUN chmod +x ./start.sh
+
+# Set the command to run when the container starts, using a relative path
+CMD ["./start.sh"]
