@@ -1,24 +1,18 @@
-# Start from the official n8n Docker image
+# Start from the official n8n Docker image (which is now Alpine-based)
 FROM n8nio/n8n:latest
 
 # Switch to the root user to install new software
 USER root
 
-# Update package lists and install curl, jq (for parsing ngrok's API response),
-# and dependencies needed to add the ngrok repository.
-RUN apt-get update && apt-get install -y curl jq gnupg lsb-release && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Alpine's package manager is 'apk'.
+# Install curl and jq (for the start script) and unzip (to extract ngrok).
+RUN apk update && apk add --no-cache curl jq unzip
 
-# Add ngrok's official GPG key for security
-RUN curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | \
-    gpg --dearmor -o /usr/share/keyrings/ngrok-archive-keyring.gpg
-
-# Add the ngrok software repository
-RUN echo "deb [signed-by=/usr/share/keyrings/ngrok-archive-keyring.gpg] \
-    https://ngrok-agent.s3.amazonaws.com `lsb_release -cs` main" | \
-    tee /etc/apt/sources.list.d/ngrok.list > /dev/null
-
-# Update package list again and install the ngrok agent
-RUN apt-get update && apt-get install -y ngrok
+# Since we are on Alpine, we download the ngrok binary directly
+# instead of using a package repository.
+RUN curl -sL "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip" -o /tmp/ngrok.zip && \
+    unzip /tmp/ngrok.zip -d /usr/local/bin && \
+    rm /tmp/ngrok.zip
 
 # Copy your start script into a standard location in the image
 COPY ./start.sh /usr/local/bin/start.sh
