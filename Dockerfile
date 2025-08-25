@@ -4,7 +4,7 @@ FROM n8nio/n8n:latest
 # The official n8n image sets the working directory to /data, which we will use.
 WORKDIR /data
 
-# Switch to the root user to install system packages
+# Switch to the root user to install system packages and prepare the script
 USER root
 
 # Install dependencies using Alpine's package manager
@@ -15,14 +15,14 @@ RUN curl -sL "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.z
     unzip /tmp/ngrok.zip -d /usr/local/bin && \
     rm /tmp/ngrok.zip
 
-# Switch back to the non-privileged 'node' user who owns the /data directory
-USER node
-
 # Copy the start script into the current working directory (/data)
 COPY ./start.sh .
 
-# Make the start script executable
+# Make the start script executable while still the root user
 RUN chmod +x ./start.sh
 
-# Set the command to run when the container starts, using a relative path
+# Now, switch to the non-privileged 'node' user for security before running the app
+USER node
+
+# Set the command to run when the container starts
 CMD ["./start.sh"]
