@@ -1,47 +1,48 @@
-#!/bin/bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
-# Render provides PORT=10000 by default for web services; fall back to 5678 locally
-N8N_LISTEN_PORT="${PORT:-5678}"
+# Render provides $PORT (fallback for local runs)
+: "${PORT:=5678}"
 
-# Link ngrok agent to your account if token is provided
-if [[ -n "${NGROK_AUTHTOKEN:-}" ]]; then
-  /usr/local/bin/ngrok config add-authtoken "$NGROK_AUTHTOKEN" >/dev/null 2>&1 || true
-fi
-
-# Start ngrok FIRST so we can discover the public HTTPS URL for webhooks
-/usr/local/bin/ngrok http "http://127.0.0.1:${N8N_LISTEN_PORT}" --log=stdout > /tmp/ngrok.log 2>&1 &
-
-# Wait for ngrok API to come up and return a public URL
-echo "Waiting for ngrok to provide a public URL..."
-for i in {1..30}; do
-  sleep 1
-  if curl -sS http://127.0.0.1:4040/api/tunnels >/dev/null 2>&1; then
-    NGROK_URL="$(curl -sS http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[]?.public_url' | grep -m1 '^https://')"
-    if [[ -n "${NGROK_URL}" && "${NGROK_URL}" == https://* ]]; then
-      break
-    fi
-  fi
-done
-
-if [[ -z "${NGROK_URL:-}" ]]; then
-  echo "ERROR: Could not obtain ngrok public URL."
-  echo "ngrok logs:"
-  tail -n 100 /tmp/ngrok.log || true
-  exit 1
-fi
-
-echo "ngrok public URL: ${NGROK_URL}"
-
-# Tell n8n to use the ngrok URL for webhook registration & display
-export WEBHOOK_URL="${NGROK_URL}"
-
-# Make sure n8n binds to the Render-assigned port (or 5678 locally)
-export N8N_PORT="${N8N_LISTEN_PORT}"
+# Make n8n pass Render's health/port check
 export N8N_HOST="0.0.0.0"
+export N8N_PORT="${PORT}"
+export N8N_PROTOCOL="http"
 
-# Optional: protect the editor with basic auth by setting
-# N8N_BASIC_AUTH_ACTIVE=true, N8N_BASIC_AUTH_USER, N8N_BASIC_AUTH_PASSWORD in Render
+# Optional: show the editor at your Render URL (uncomment and set if you want)
+# export N8N_EDITOR_BASE_URL="https://your-service.onrender.com"
 
-# Finally, start n8n (be PID 1 so signals work correctly)
+# Configure ngrok (needs NGROK_AUTHTOKEN)
+if [ -n "${NGROK_AUTHTOKEN:-}" ]; then
+  ngrok config add-authtoken "$NGROK_AUTHTOKEN"
+fi
+
+# Start ngrok pointing to the *internal* n8n port
+ngrok http "http://127.0.0.1:${N8N_PORT}" --log=stdout >/tmp/ngrok.log 2>&1 &
+NGROK_PID=$!
+
+# Wait for ngrok API and fetch the https public URL
+echo "Waiting for ngrok tunnel..."
+geturl() {
+  curl -fsS http://127.0.0.1:4040/api/tunnels \
+  | jq -r '.tunnels[] | select(.proto=="https") | .public_url' | head -n1
+}
+for i in $(seq 1 60); do
+  URL="$(geturl || true)"
+  [ -n "$URL" ] && break
+  sleep 1
+done
+[ -n "${URL:-}" ] || { echo "ngrok URL not found"; tail -n +200 /tmp/ngrok.log || true; exit 1; }
+
+# Tell n8n to register webhooks at the ngrok URL
+export WEBHOOK_URL="${URL}/"
+echo "WEBHOOK_URL=$WEBHOOK_URL"
+
+# Strongly recommended so credentials survive restarts
+: "${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY env var}"
+
+# Clean shutdown if container stops
+trap 'kill $NGROK_PID >/dev/null 2>&1 || true' INT TERM EXIT
+
+# Start n8n as PID 1
 exec n8n start
