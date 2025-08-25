@@ -21,8 +21,8 @@ COPY ./start.sh .
 # Make the start script executable while still the root user
 RUN chmod +x ./start.sh
 
-# Now, switch to the non-privileged 'node' user for security before running the app
+# Now, switch to the non-privileged 'node' user for security
 USER node
 
-# Set the command to run when the container starts
-CMD ["./start.sh"]
+# DEBUG: Instead of running the script, just list the files in the directory.
+CMD ["ls", "-la"]
