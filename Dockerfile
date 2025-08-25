@@ -1,25 +1,21 @@
-# Use Debian-based image (NOT distroless)
+# Dockerfile (simple + reliable)
 FROM n8nio/n8n:1-debian
 
 USER root
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl jq ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
-# System tools we need
-RUN apt-get update && apt-get install -y curl jq unzip ca-certificates && rm -rf /var/lib/apt/lists/*
+# install ngrok (v3)
+RUN curl -fsSL https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz \
+ | tar -xz -C /usr/local/bin
 
-# Install ngrok (official binaries are hosted at bin.equinox.io)
-RUN curl -fsSL https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -o /tmp/ngrok.zip \
-  && unzip /tmp/ngrok.zip -d /usr/local/bin \
-  && rm /tmp/ngrok.zip
+# copy startup script
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod 755 /usr/local/bin/start.sh
 
-# Copy startup script and make it executable
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
-# For Render clarity (Render's default expected port is 10000)
-EXPOSE 10000
-
-# Drop privileges back to the 'node' user provided by the base image
+# run as non-root like the official image
 USER node
 
-# Use bash to avoid PATH/cwd quirks
-CMD ["bash", "/start.sh"]
+# our script becomes PID 1
+ENTRYPOINT ["/usr/local/bin/start.sh"]
