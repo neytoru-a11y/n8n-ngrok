@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# If NGROK_AUTHTOKEN is set, configure ngrok
+# Configure ngrok if token provided
 if [ -n "$NGROK_AUTHTOKEN" ]; then
   echo "Configuring ngrok with provided auth token..."
   ngrok config add-authtoken "$NGROK_AUTHTOKEN"
@@ -13,7 +13,7 @@ fi
 ngrok http 5678 --log=stdout > /tmp/ngrok.log &
 NGROK_PID=$!
 
-# Wait until ngrok API responds with a tunnel URL
+# Wait for ngrok to provide URL
 echo "⏳ Waiting for ngrok to start..."
 NGROK_URL=""
 for i in $(seq 1 20); do
@@ -31,9 +31,7 @@ if [ -z "$NGROK_URL" ] || [ "$NGROK_URL" = "null" ]; then
 fi
 
 echo "✅ NGROK URL: $NGROK_URL"
-
-# Export as environment variable so n8n can use it
 export WEBHOOK_URL=$NGROK_URL
 
-# Start n8n as PID 1
+# Start n8n
 exec n8n start
