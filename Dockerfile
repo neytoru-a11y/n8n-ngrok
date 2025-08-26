@@ -1,17 +1,23 @@
-FROM n8nio/n8n:1.74.0
+FROM n8nio/n8n:1.78.1
 
-# Install ngrok + jq
+# Install required packages on Alpine
 USER root
-RUN apt-get update && apt-get install -y wget unzip curl jq \
-    && wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64.zip \
+RUN apk add --no-cache \
+    curl \
+    wget \
+    unzip \
+    jq
+
+# Install ngrok
+RUN wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64.zip \
     && unzip ngrok-stable-linux-amd64.zip -d /usr/local/bin \
-    && rm ngrok-stable-linux-amd64.zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && rm ngrok-stable-linux-amd64.zip
 
-# Copy your custom entrypoint
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
+# Switch back to n8n user
 USER node
 
-CMD ["/start.sh"]
+# Expose n8n port
+EXPOSE 5678
+
+# Start script (you already have start.sh in repo)
+CMD ["./start.sh"]
