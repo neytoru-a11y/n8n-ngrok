@@ -5,6 +5,7 @@ services:
     plan: free
     region: oregon
     dockerfilePath: ./Dockerfile
+    # Optional but safe: let n8n know its external URL so webhooks build correctly
     envVars:
       - key: N8N_BASIC_AUTH_ACTIVE
         value: "true"
@@ -16,7 +17,8 @@ services:
         generateValue: true
       - key: N8N_PORT
         value: "5678"
-      - key: NGROK_AUTHTOKEN
-        sync: false
-    # Force Render to start this explicitly
-    startCommand: /usr/local/bin/start.sh
+      - key: N8N_PROTOCOL
+        value: "https"
+      # Replace with your actual Render URL after the first deploy
+      - key: N8N_WEBHOOK_URL
+        value: "https://<your-service>.onrender.com"
