@@ -21,4 +21,4 @@ services:
       - key: N8N_PORT
         value: "5678"
       - key: NGROK_AUTHTOKEN
-        sync: false   # Set this in Render dashboard → Environment (hidden)
+        sync: false   # Set this in Render Dashboard (Environment → Secret)
