@@ -1,5 +1,5 @@
 # Use the Debian-based n8n image (has apt-get available)
-FROM n8nio/n8n:1.81.1-debian
+FROM n8nio/n8n:1.81.1
 
 # Switch to root to install packages
 USER root
