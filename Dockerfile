@@ -13,11 +13,16 @@ RUN wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-linux-amd64.zip \
     && unzip ngrok-stable-linux-amd64.zip -d /usr/local/bin \
     && rm ngrok-stable-linux-amd64.zip
 
+# Copy your start.sh script into the container
+WORKDIR /app
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # Switch back to n8n user
 USER node
 
 # Expose n8n port
 EXPOSE 5678
 
-# Start script (you already have start.sh in repo)
-CMD ["./start.sh"]
+# Use your custom start script
+CMD ["sh", "/app/start.sh"]
