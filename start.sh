@@ -1,25 +1,17 @@
 #!/bin/sh
-set -e
-
-echo ">>> Starting ngrok in background..."
+# Start ngrok in background
 ngrok http 5678 --log=stdout > /tmp/ngrok.log &
+
+# Wait a bit for ngrok to start
 sleep 5
 
-echo ">>> Fetching public ngrok URL..."
-NGROK_URL=$(curl --silent --show-error http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+# Fetch public URL from ngrok
+NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
 
-if [ -z "$NGROK_URL" ] || [ "$NGROK_URL" = "null" ]; then
-  echo "!!! Failed to fetch ngrok URL"
-  exit 1
-fi
+echo "NGROK URL: $NGROK_URL"
 
-echo ">>> Ngrok tunnel is live at: $NGROK_URL"
-
-# Export it so n8n picks it up
+# Export as environment variable so n8n can use it
 export WEBHOOK_URL=$NGROK_URL
-export N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 
-# Finally start n8n
-echo ">>> Starting n8n..."
-
-exec n8n start
+# Start n8n
+n8n start
