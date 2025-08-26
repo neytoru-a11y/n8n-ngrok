@@ -14,11 +14,9 @@ services:
         value: "ChangeThisPassword123!"
       - key: N8N_ENCRYPTION_KEY
         generateValue: true
-      - key: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
-        value: "true"
-      - key: N8N_SECURE_COOKIE
-        value: "true"
       - key: N8N_PORT
         value: "5678"
       - key: NGROK_AUTHTOKEN
-        sync: false   # Set this in Render Dashboard (Environment → Secret)
+        sync: false
+    # Force Render to start this explicitly
+    startCommand: /usr/local/bin/start.sh
