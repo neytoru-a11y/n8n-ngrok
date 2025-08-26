@@ -1,3 +1,6 @@
-FROM n8nio/n8n:1.78.1
+FROM docker.n8n.io/n8nio/n8n:1.78.1
+
 EXPOSE 5678
-CMD ["n8n"]
+
+ENTRYPOINT ["tini", "--"]
+CMD ["n8n", "start"]
