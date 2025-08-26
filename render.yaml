@@ -1,24 +1,60 @@
 services:
+  # This is the n8n web service that runs your automation workflows
   - type: web
     name: n8n-viral-finder
-    env: docker
-    plan: free
+    runtime: docker # Use 'runtime' instead of the deprecated 'env'
     region: oregon
-    dockerfilePath: ./Dockerfile
-    # Optional but safe: let n8n know its external URL so webhooks build correctly
+    plan: starter # The 'free' plan sleeps after inactivity, which will cause webhooks to fail. 'Starter' is required for production.
+    dockerfilePath:./Dockerfile
+    healthCheckPath: /healthz # Recommended for zero-downtime deploys
     envVars:
+      # --- Database Configuration ---
+      # These variables connect n8n to the PostgreSQL database defined below.
+      # Render injects the correct values automatically from the 'n8n-database' service.
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: n8n-database
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: n8n-database
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: n8n-database
+          property: database
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: n8n-database
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: n8n-database
+          property: password
+
+      # --- n8n Core Configuration & Security ---
       - key: N8N_BASIC_AUTH_ACTIVE
         value: "true"
       - key: N8N_BASIC_AUTH_USER
-        value: "admin"
+        value: "admin" # For better security, you can change this in the Render Dashboard Environment tab later
       - key: N8N_BASIC_AUTH_PASSWORD
-        value: "ChangeThisPassword123!"
+        generateValue: true # More secure: Render will generate and manage this secret password
       - key: N8N_ENCRYPTION_KEY
-        generateValue: true
+        generateValue: true # More secure: Render will generate and manage this secret key
       - key: N8N_PORT
         value: "5678"
       - key: N8N_PROTOCOL
         value: "https"
-      # Replace with your actual Render URL after the first deploy
-      - key: N8N_WEBHOOK_URL
-        value: "https://<your-service>.onrender.com"
+      
+      # --- Webhook URL (Crucial for Integrations) ---
+      # This uses the public URL you provided.
+      - key: WEBHOOK_URL
+        value: "https://n8n-viral-finder.onrender.com"
+
+# This block defines the PostgreSQL database for persistent data storage
+databases:
+  - name: n8n-database
+    region: oregon
+    plan: free # Note: The free database expires after 90 days. You will need to upgrade for long-term production use.
