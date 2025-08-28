@@ -1,10 +1,10 @@
-# Start from your specified n8n image
+# Start from the official n8n image
 FROM n8nio/n8n:1.108.1
 
-# Switch to the root user to be able to install packages
+# Switch to root to install dependencies
 USER root
 
-# Update the package index, install system dependencies, then install yt-dlp, and finally clean up.
+# Install Python, pip, ffmpeg, then yt-dlp
 RUN apk update && \
     apk add --no-cache python3 py3-pip ffmpeg && \
     pip3 install --no-cache-dir --break-system-packages yt-dlp && \
@@ -12,7 +12,9 @@ RUN apk update && \
 
 # Copy your exported YouTube cookies into the container
 COPY cookies.txt /data/cookies.txt
+
+# Set secure permissions (readable only by node user)
 RUN chown node:node /data/cookies.txt && chmod 600 /data/cookies.txt
 
-# Switch back to the default, less privileged user for security
+# Switch back to node user for security
 USER node
