@@ -10,5 +10,9 @@ RUN apk update && \
     pip3 install --no-cache-dir --break-system-packages yt-dlp && \
     rm -rf /var/cache/apk/*
 
+# Copy your exported YouTube cookies into the container
+COPY cookies.txt /data/cookies.txt
+RUN chown node:node /data/cookies.txt && chmod 600 /data/cookies.txt
+
 # Switch back to the default, less privileged user for security
 USER node
