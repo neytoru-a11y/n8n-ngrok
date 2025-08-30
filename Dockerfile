@@ -1,5 +1,5 @@
 # This locks your environment to the specific version you've tested
-FROM docker.n8n.io/n8nio/n8n:1.180.1
+FROM docker.n8n.io/n8nio/n8n:1.108.1
 
 # ... (the rest of the Dockerfile stays the same)
 USER root
