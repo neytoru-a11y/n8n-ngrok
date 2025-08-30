@@ -1,23 +1,9 @@
-# Start from official n8n image
-FROM n8nio/n8n:1.108.1
+# This locks your environment to the specific version you've tested
+FROM docker.n8n.io/n8nio/n8n:1.180.1
 
+# ... (the rest of the Dockerfile stays the same)
 USER root
-
-# Install yt-dlp + ffmpeg
-RUN apk update && \
-    apk add --no-cache python3 py3-pip ffmpeg && \
-    pip3 install --no-cache-dir --break-system-packages yt-dlp && \
-    rm -rf /var/cache/apk/*
-
-# Create /data (Render mounts cookies.txt here)
-RUN mkdir -p /data && chown node:node /data
-
-# Copy entrypoint script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-# Switch to node again (more secure)
+RUN apk update && apk add --no-cache ffmpeg python3
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
+    && chmod a+rx /usr/local/bin/yt-dlp
 USER node
-
-# Use our entrypoint
-ENTRYPOINT ["/entrypoint.sh"]
