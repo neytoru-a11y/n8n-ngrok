@@ -1,5 +1,5 @@
 # Pinning to the latest confirmed stable version for production
-FROM docker.n8n.io/n8nio/n8n:1.106.3
+FROM docker.n8n.io/n8nio/n8n:1.46.0
 
 # Switch to the root user to install system packages
 USER root
